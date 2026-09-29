@@ -59,6 +59,12 @@ No. The extension only reads what your sites send to your own MainWP Dashboard d
 
 No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trademark of its owners.
 
+== Screenshots ==
+
+1. The Offair page under Add-ons: every outage of the last 90 days on every site, and whether each site reports its outages.
+2. The widget on the MainWP overview: the outages of the last 30 days on all your sites.
+3. The widget on the page of a site: its recent outages and a link to its Offair settings.
+
 == Changelog ==
 
 = 0.1.0 =

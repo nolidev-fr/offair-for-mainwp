@@ -64,13 +64,20 @@ class Widgets {
 
 		$this->site_id = (int) $site_id;
 
-		$boxes[] = array(
+		$box = array(
 			'id'            => 'offair',
 			'plugin'        => OFFAIR_MAINWP_FILE,
 			'key'           => $this->plugin->key(),
 			'metabox_title' => __( 'Offair', 'offair-for-mainwp' ),
 			'callback'      => array( $this, 'render' ),
 		);
+
+		if ( 0 === $this->site_id ) {
+			// Column, row, width and height on the MainWP grid: half the width, tall enough for the list of all the sites.
+			$box['layout'] = array( -1, -1, 6, 45 );
+		}
+
+		$boxes[] = $box;
 
 		return $boxes;
 	}
@@ -185,7 +192,7 @@ class Widgets {
 	 * @param bool    $with_site Whether to show the site column.
 	 */
 	private function incidents_table( array $incidents, $with_site ) {
-		echo '<table class="ui single line compact table"><thead><tr>';
+		echo '<table class="ui compact unstackable table"><thead><tr>';
 		if ( $with_site ) {
 			echo '<th>' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</th>';
 		}
@@ -197,7 +204,7 @@ class Widgets {
 				echo '<td><a href="' . esc_url( self::site_url( $incident['site']['id'] ) ) . '">' . esc_html( $incident['site']['name'] ) . '</a></td>';
 			}
 			echo '<td>' . esc_html( Labels::screen( $incident['screen'] ) ) . '</td>';
-			echo '<td>' . esc_html( Labels::date( $incident['start'] ) ) . '</td>';
+			echo '<td>' . esc_html( Labels::short_date( $incident['start'] ) ) . '</td>';
 			echo '<td>' . esc_html( Labels::duration( $incident ) ) . '</td>';
 			echo '</tr>';
 		}

@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: Offair for MainWP 0.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/offair-for-"
 "mainwp\n"
-"POT-Creation-Date: 2026-09-29T03:19:24+00:00\n"
+"POT-Creation-Date: 2026-09-29T21:59:14+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,7 +32,9 @@ msgstr ""
 msgid ""
 "Shows in your MainWP Dashboard the outages your visitors ran into on all "
 "your sites, recorded by Offair."
-msgstr "Affiche dans votre tableau de bord MainWP les pannes vues par vos visiteurs sur tous vos sites, enregistrées par Offair."
+msgstr ""
+"Affiche dans votre tableau de bord MainWP les pannes vues par vos visiteurs "
+"sur tous vos sites, enregistrées par Offair."
 
 #. Author of the plugin
 #: offair-for-mainwp.php
@@ -49,20 +51,20 @@ msgid "Outages of the last 90 days"
 msgstr "Pannes des 90 derniers jours"
 
 #: includes/class-incidents-page.php:111 includes/class-incidents-page.php:148
-#: includes/class-incidents-page.php:173 includes/class-widgets.php:190
+#: includes/class-incidents-page.php:173 includes/class-widgets.php:197
 msgid "Site"
 msgstr "Site"
 
 #: includes/class-incidents-page.php:111 includes/class-incidents-page.php:154
-#: includes/class-widgets.php:192
+#: includes/class-widgets.php:199
 msgid "Page"
 msgstr "Page"
 
-#: includes/class-incidents-page.php:111 includes/class-widgets.php:192
+#: includes/class-incidents-page.php:111 includes/class-widgets.php:199
 msgid "Start"
 msgstr "Début"
 
-#: includes/class-incidents-page.php:111 includes/class-widgets.php:192
+#: includes/class-incidents-page.php:111 includes/class-widgets.php:199
 msgid "Duration"
 msgstr "Durée"
 
@@ -134,61 +136,67 @@ msgstr "Offair désactivé"
 msgid "Update Offair to %s or later"
 msgstr "Mettre Offair à jour en %s ou plus"
 
-#: includes/class-labels.php:75
+#: includes/class-labels.php:78
 msgid "Database error"
 msgstr "Erreur de base de données"
 
-#: includes/class-labels.php:76
+#: includes/class-labels.php:79
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: includes/class-labels.php:77
+#: includes/class-labels.php:80
 msgid "PHP error"
 msgstr "Erreur PHP"
 
-#: includes/class-labels.php:101
+#. translators: Date format of the widgets, see https://www.php.net/manual/datetime.format.php
+#: includes/class-labels.php:102
+msgid "M j"
+msgstr "j M"
+
+#: includes/class-labels.php:115
 msgid "less than a minute"
 msgstr "moins d'une minute"
 
-#: includes/class-widgets.php:71 includes/class-widgets.php:117
-#: includes/class-widgets.php:152
+#: includes/class-widgets.php:71 includes/class-widgets.php:124
+#: includes/class-widgets.php:159
 msgid "Offair"
 msgstr "Offair"
 
-#: includes/class-widgets.php:117
-msgid "Outages seen by visitors in the last 30 days, all sites"
-msgstr "Pannes vues par les visiteurs ces 30 derniers jours, tous sites confondus"
-
 #: includes/class-widgets.php:124
+msgid "Outages seen by visitors in the last 30 days, all sites"
+msgstr ""
+"Pannes vues par les visiteurs ces 30 derniers jours, tous sites confondus"
+
+#: includes/class-widgets.php:131
 msgid "No outage in the last 30 days."
 msgstr "Aucune panne ces 30 derniers jours."
 
 #. translators: %d: number of sites.
-#: includes/class-widgets.php:131
+#: includes/class-widgets.php:138
 #, php-format
 msgid "%d site does not report its outages."
 msgid_plural "%d sites do not report their outages."
 msgstr[0] "%d site ne remonte pas ses pannes."
 msgstr[1] "%d sites ne remontent pas leurs pannes."
 
-#: includes/class-widgets.php:139
+#: includes/class-widgets.php:146
 msgid "All outages"
 msgstr "Toutes les pannes"
 
-#: includes/class-widgets.php:152
+#: includes/class-widgets.php:159
 msgid "Outages seen by visitors on this site"
 msgstr "Pannes vues par les visiteurs sur ce site"
 
-#: includes/class-widgets.php:161
+#: includes/class-widgets.php:168
 msgid "No outage in the last 90 days."
 msgstr "Aucune panne ces 90 derniers jours."
 
 #. translators: %s: date of the last synchronization.
-#: includes/class-widgets.php:168
+#: includes/class-widgets.php:175
 #, php-format
 msgid "Synchronized on %s."
 msgstr "Synchronisé le %s."
 
-#: includes/class-widgets.php:177
+#: includes/class-widgets.php:184
 msgid "Open the Offair settings"
 msgstr "Ouvrir les réglages d'Offair"

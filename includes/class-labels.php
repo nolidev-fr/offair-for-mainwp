@@ -50,7 +50,10 @@ class Labels {
 	 * @return string Escaped markup.
 	 */
 	public static function badge( $status ) {
-		return '<span class="ui ' . esc_attr( self::color( $status ) ) . ' empty circular mini label"></span> ' . esc_html( self::status( $status ) );
+		// The grey of the MainWP theme is too pale for an empty label: the color is set here.
+		$style = 'grey' === self::color( $status ) ? ' style="background-color:#8c8f94;border-color:#8c8f94"' : '';
+
+		return '<span class="ui ' . esc_attr( self::color( $status ) ) . ' empty circular mini label"' . $style . '></span> ' . esc_html( self::status( $status ) );
 	}
 
 	/**
@@ -86,6 +89,17 @@ class Labels {
 	 */
 	public static function date( $time ) {
 		return wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $time );
+	}
+
+	/**
+	 * Short date and time, for the narrow widgets: day and month, then the time.
+	 *
+	 * @param int $time Unix time.
+	 * @return string
+	 */
+	public static function short_date( $time ) {
+		/* translators: Date format of the widgets, see https://www.php.net/manual/datetime.format.php */
+		return wp_date( __( 'M j', 'offair-for-mainwp' ) . ' ' . get_option( 'time_format' ), (int) $time );
 	}
 
 	/**

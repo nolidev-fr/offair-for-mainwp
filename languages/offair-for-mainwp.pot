@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-29T03:19:24+00:00\n"
+"POT-Creation-Date: 2026-09-29T21:59:14+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: offair-for-mainwp\n"
@@ -47,23 +47,23 @@ msgstr ""
 #: includes/class-incidents-page.php:111
 #: includes/class-incidents-page.php:148
 #: includes/class-incidents-page.php:173
-#: includes/class-widgets.php:190
+#: includes/class-widgets.php:197
 msgid "Site"
 msgstr ""
 
 #: includes/class-incidents-page.php:111
 #: includes/class-incidents-page.php:154
-#: includes/class-widgets.php:192
+#: includes/class-widgets.php:199
 msgid "Page"
 msgstr ""
 
 #: includes/class-incidents-page.php:111
-#: includes/class-widgets.php:192
+#: includes/class-widgets.php:199
 msgid "Start"
 msgstr ""
 
 #: includes/class-incidents-page.php:111
-#: includes/class-widgets.php:192
+#: includes/class-widgets.php:199
 msgid "Duration"
 msgstr ""
 
@@ -129,62 +129,67 @@ msgstr ""
 msgid "Update Offair to %s or later"
 msgstr ""
 
-#: includes/class-labels.php:75
+#: includes/class-labels.php:78
 msgid "Database error"
 msgstr ""
 
-#: includes/class-labels.php:76
+#: includes/class-labels.php:79
 msgid "Maintenance"
 msgstr ""
 
-#: includes/class-labels.php:77
+#: includes/class-labels.php:80
 msgid "PHP error"
 msgstr ""
 
-#: includes/class-labels.php:101
+#. translators: Date format of the widgets, see https://www.php.net/manual/datetime.format.php
+#: includes/class-labels.php:102
+msgid "M j"
+msgstr ""
+
+#: includes/class-labels.php:115
 msgid "less than a minute"
 msgstr ""
 
 #: includes/class-widgets.php:71
-#: includes/class-widgets.php:117
-#: includes/class-widgets.php:152
+#: includes/class-widgets.php:124
+#: includes/class-widgets.php:159
 msgid "Offair"
 msgstr ""
 
-#: includes/class-widgets.php:117
+#: includes/class-widgets.php:124
 msgid "Outages seen by visitors in the last 30 days, all sites"
 msgstr ""
 
-#: includes/class-widgets.php:124
+#: includes/class-widgets.php:131
 msgid "No outage in the last 30 days."
 msgstr ""
 
 #. translators: %d: number of sites.
-#: includes/class-widgets.php:131
+#: includes/class-widgets.php:138
 #, php-format
 msgid "%d site does not report its outages."
 msgid_plural "%d sites do not report their outages."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-widgets.php:139
+#: includes/class-widgets.php:146
 msgid "All outages"
 msgstr ""
 
-#: includes/class-widgets.php:152
+#: includes/class-widgets.php:159
 msgid "Outages seen by visitors on this site"
 msgstr ""
 
-#: includes/class-widgets.php:161
+#: includes/class-widgets.php:168
 msgid "No outage in the last 90 days."
 msgstr ""
 
 #. translators: %s: date of the last synchronization.
-#: includes/class-widgets.php:168
+#: includes/class-widgets.php:175
 #, php-format
 msgid "Synchronized on %s."
 msgstr ""
 
-#: includes/class-widgets.php:177
+#: includes/class-widgets.php:184
 msgid "Open the Offair settings"
 msgstr ""
