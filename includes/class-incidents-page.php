@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Extension page: every outage of every site, filtered by site and by page,
- * and the state of Offair on each site.
+ * and whether each site reports its outages.
  */
 class Incidents_Page {
 
@@ -82,11 +82,11 @@ class Incidents_Page {
 		$incidents = array();
 
 		foreach ( $sites as $site ) {
-			if ( ( $site_filter && $site_filter !== $site['id'] ) || empty( $site['stored']['offair']['incidents'] ) ) {
+			if ( $site_filter && $site_filter !== $site['id'] ) {
 				continue;
 			}
 
-			foreach ( $site['stored']['offair']['incidents'] as $incident ) {
+			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
 				if ( '' === $screen_filter || $screen_filter === $incident['screen'] ) {
 					$incidents[] = $incident + array( 'site' => $site );
 				}
@@ -175,7 +175,7 @@ class Incidents_Page {
 
 		foreach ( $sites as $site ) {
 			$stored  = $site['stored'];
-			$last    = Sites_Column::last_incident( $stored );
+			$last    = current( Sync::incidents( $stored ) );
 			$version = '';
 
 			if ( ! empty( $stored['offair']['version'] ) ) {
@@ -188,7 +188,7 @@ class Incidents_Page {
 			echo '<td><a href="' . esc_url( Widgets::site_url( $site['id'] ) ) . '">' . esc_html( $site['name'] ) . '</a></td>';
 			echo '<td>' . Labels::badge( Sync::status( $stored ) ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
 			echo '<td>' . esc_html( $version ) . '</td>';
-			echo '<td>' . esc_html( null !== $last ? Labels::date( $last['start'] ) : '' ) . '</td>';
+			echo '<td>' . esc_html( $last ? Labels::date( $last['start'] ) : '' ) . '</td>';
 			echo '</tr>';
 		}
 

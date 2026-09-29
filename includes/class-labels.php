@@ -22,13 +22,12 @@ class Labels {
 	 */
 	public static function status( $status ) {
 		$labels = array(
-			'ok'       => __( 'Pages in place', 'offair-for-mainwp' ),
-			'warning'  => __( 'Needs attention', 'offair-for-mainwp' ),
-			'unknown'  => __( 'Sync to see', 'offair-for-mainwp' ),
-			'absent'   => __( 'Offair not installed', 'offair-for-mainwp' ),
-			'inactive' => __( 'Offair inactive', 'offair-for-mainwp' ),
+			'reporting' => __( 'Reports its outages', 'offair-for-mainwp' ),
+			'unknown'   => __( 'Sync to see', 'offair-for-mainwp' ),
+			'absent'    => __( 'Offair not installed', 'offair-for-mainwp' ),
+			'inactive'  => __( 'Offair inactive', 'offair-for-mainwp' ),
 			/* translators: %s: version of Offair, for example 1.3.0. */
-			'outdated' => sprintf( __( 'Update Offair to %s or later', 'offair-for-mainwp' ), Sync::MIN_OFFAIR ),
+			'outdated'  => sprintf( __( 'Update Offair to %s or later', 'offair-for-mainwp' ), Sync::MIN_OFFAIR ),
 		);
 
 		return isset( $labels[ $status ] ) ? $labels[ $status ] : $status;
@@ -41,12 +40,7 @@ class Labels {
 	 * @return string
 	 */
 	public static function color( $status ) {
-		$colors = array(
-			'ok'      => 'green',
-			'warning' => 'orange',
-		);
-
-		return isset( $colors[ $status ] ) ? $colors[ $status ] : 'grey';
+		return 'reporting' === $status ? 'green' : 'grey';
 	}
 
 	/**
@@ -82,40 +76,6 @@ class Labels {
 			'maintenance' => __( 'Maintenance', 'offair-for-mainwp' ),
 			'php'         => __( 'PHP error', 'offair-for-mainwp' ),
 		);
-	}
-
-	/**
-	 * State of a page.
-	 *
-	 * @param string $state current, stale, missing, foreign or off.
-	 * @return string
-	 */
-	public static function page_state( $state ) {
-		$labels = array(
-			'current' => __( 'Up to date', 'offair-for-mainwp' ),
-			'stale'   => __( 'Needs regeneration', 'offair-for-mainwp' ),
-			'missing' => __( 'Missing', 'offair-for-mainwp' ),
-			'foreign' => __( 'Not added by Offair', 'offair-for-mainwp' ),
-			'off'     => __( 'Disabled', 'offair-for-mainwp' ),
-		);
-
-		return isset( $labels[ $state ] ) ? $labels[ $state ] : $state;
-	}
-
-	/**
-	 * Explanation of a problem.
-	 *
-	 * @param string $code Problem code.
-	 * @return string
-	 */
-	public static function problem( $code ) {
-		$labels = array(
-			'php_blocked'         => __( 'The PHP error page cannot be shown with the PHP configuration of the site.', 'offair-for-mainwp' ),
-			'uploads_unreachable' => __( 'The uploads folder uses a custom path, so the pages show a neutral English page.', 'offair-for-mainwp' ),
-			'not_writable'        => __( 'wp-content is not writable, so the pages cannot be written automatically.', 'offair-for-mainwp' ),
-		);
-
-		return isset( $labels[ $code ] ) ? $labels[ $code ] : $code;
 	}
 
 	/**

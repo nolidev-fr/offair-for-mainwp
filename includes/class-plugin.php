@@ -64,7 +64,6 @@ final class Plugin {
 		$this->incidents_page = new Incidents_Page( $this );
 
 		new Sync();
-		new Sites_Column();
 		new Widgets( $this );
 	}
 

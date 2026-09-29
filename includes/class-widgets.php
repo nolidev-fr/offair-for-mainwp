@@ -10,8 +10,8 @@ namespace OffairForMainWP;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * On the overview: outages of the last 30 days and sites that need attention.
- * On the page of a site: state of the three pages and its recent outages.
+ * On the overview: outages of the last 30 days on all the sites.
+ * On the page of a site: its recent outages.
  */
 class Widgets {
 
@@ -91,25 +91,16 @@ class Widgets {
 	 * Widget of the overview.
 	 */
 	private function render_overview() {
-		$since     = time() - self::PERIOD;
-		$incidents = array();
-		$attention = array();
-		$missing   = 0;
+		$since      = time() - self::PERIOD;
+		$incidents  = array();
+		$not_seeing = 0;
 
 		foreach ( $this->plugin->sites() as $site ) {
-			$status = Sync::status( $site['stored'] );
-
-			if ( 'warning' === $status ) {
-				$attention[] = $site;
-			} elseif ( 'ok' !== $status ) {
-				++$missing;
+			if ( 'reporting' !== Sync::status( $site['stored'] ) ) {
+				++$not_seeing;
 			}
 
-			if ( empty( $site['stored']['offair']['incidents'] ) ) {
-				continue;
-			}
-
-			foreach ( $site['stored']['offair']['incidents'] as $incident ) {
+			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
 				if ( $incident['end'] >= $since ) {
 					$incidents[] = $incident + array( 'site' => $site );
 				}
@@ -123,7 +114,7 @@ class Widgets {
 			}
 		);
 
-		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Outages of the last 30 days, all sites', 'offair-for-mainwp' ) );
+		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Outages seen by visitors in the last 30 days, all sites', 'offair-for-mainwp' ) );
 
 		echo '<div class="mainwp-scrolly-overflow">';
 
@@ -133,20 +124,12 @@ class Widgets {
 			echo '<p>' . esc_html__( 'No outage in the last 30 days.', 'offair-for-mainwp' ) . '</p>';
 		}
 
-		if ( $attention ) {
-			echo '<h4 class="ui header">' . esc_html__( 'Sites that need attention', 'offair-for-mainwp' ) . '</h4><div class="ui list">';
-			foreach ( $attention as $site ) {
-				echo '<div class="item"><a href="' . esc_url( self::site_url( $site['id'] ) ) . '">' . esc_html( $site['name'] ) . '</a></div>';
-			}
-			echo '</div>';
-		}
-
-		if ( $missing ) {
+		if ( $not_seeing ) {
 			echo '<p><small>' . esc_html(
 				sprintf(
 					/* translators: %d: number of sites. */
-					_n( '%d site does not report Offair data.', '%d sites do not report Offair data.', $missing, 'offair-for-mainwp' ),
-					$missing
+					_n( '%d site does not report its outages.', '%d sites do not report their outages.', $not_seeing, 'offair-for-mainwp' ),
+					$not_seeing
 				)
 			) . '</small></p>';
 		}
@@ -162,34 +145,20 @@ class Widgets {
 	 * @param int $site_id Site ID.
 	 */
 	private function render_site( $site_id ) {
-		$stored = Sync::get( $site_id );
-		$status = Sync::status( $stored );
+		$stored    = Sync::get( $site_id );
+		$status    = Sync::status( $stored );
+		$incidents = Sync::incidents( $stored );
 
-		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Error pages and outages of this site', 'offair-for-mainwp' ) );
+		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Outages seen by visitors on this site', 'offair-for-mainwp' ) );
 
 		echo '<div class="mainwp-scrolly-overflow">';
-		echo '<p>' . Labels::badge( $status ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
 
-		if ( ! empty( $stored['offair'] ) ) {
-			$offair = $stored['offair'];
-
-			echo '<table class="ui single line table"><tbody>';
-			foreach ( $offair['pages'] as $screen => $state ) {
-				echo '<tr><td>' . esc_html( Labels::screen( $screen ) ) . '</td><td>' . esc_html( Labels::page_state( $state ) ) . '</td></tr>';
-			}
-			echo '<tr><td>' . esc_html__( 'Email alert', 'offair-for-mainwp' ) . '</td><td>' . esc_html( $offair['alert'] ? __( 'On', 'offair-for-mainwp' ) : __( 'Off', 'offair-for-mainwp' ) ) . '</td></tr>';
-			echo '</tbody></table>';
-
-			foreach ( $offair['problems'] as $code ) {
-				echo '<div class="ui small yellow message">' . esc_html( Labels::problem( $code ) ) . '</div>';
-			}
-
-			if ( $offair['incidents'] ) {
-				echo '<h4 class="ui header">' . esc_html__( 'Recent outages', 'offair-for-mainwp' ) . '</h4>';
-				$this->incidents_table( array_slice( $offair['incidents'], 0, self::MAX_ROWS ), false );
-			} else {
-				echo '<p>' . esc_html__( 'No outage in the last 90 days.', 'offair-for-mainwp' ) . '</p>';
-			}
+		if ( 'reporting' !== $status ) {
+			echo '<p>' . Labels::badge( $status ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
+		} elseif ( $incidents ) {
+			$this->incidents_table( array_slice( $incidents, 0, self::MAX_ROWS ), false );
+		} else {
+			echo '<p>' . esc_html__( 'No outage in the last 90 days.', 'offair-for-mainwp' ) . '</p>';
 		}
 
 		if ( null !== $stored ) {
@@ -204,7 +173,7 @@ class Widgets {
 
 		echo '</div>';
 
-		if ( in_array( $status, array( 'ok', 'warning' ), true ) ) {
+		if ( 'reporting' === $status ) {
 			$this->footer( Labels::settings_url( $site_id ), __( 'Open the Offair settings', 'offair-for-mainwp' ), true );
 		}
 	}
