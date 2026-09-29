@@ -1,0 +1,28 @@
+name: Deploy to WordPress.org
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  deploy:
+    name: Push the tag to the plugin directory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check that the tag matches the plugin version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          header="$(sed -n 's/^ \* Version:[[:space:]]*//p' offair-for-mainwp.php)"
+          constant="$(sed -n "s/^define( 'OFFAIR_MAINWP_VERSION', '\(.*\)' );$/\1/p" offair-for-mainwp.php)"
+          stable="$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt)"
+          echo "tag=$tag header=$header constant=$constant stable=$stable"
+          [ "$tag" = "$header" ] && [ "$tag" = "$constant" ] && [ "$tag" = "$stable" ]
+      - name: Deploy to the SVN repository
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: offair-for-mainwp
