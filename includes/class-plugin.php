@@ -58,7 +58,6 @@ final class Plugin {
 	 * MainWP Dashboard is not active, since MainWP fires them.
 	 */
 	private function __construct() {
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_filter( 'mainwp_getextensions', array( $this, 'register' ) );
 
 		$this->incidents_page = new Incidents_Page( $this );
@@ -122,10 +121,16 @@ final class Plugin {
 	}
 
 	/**
-	 * Loads the translations shipped in the languages directory. Language
-	 * packs from translate.wordpress.org take precedence when present.
+	 * Whether the current user may see the outages: an administrator of the
+	 * dashboard, with the access MainWP gives to this extension.
+	 *
+	 * @return bool
 	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'offair-for-mainwp', false, dirname( OFFAIR_MAINWP_BASENAME ) . '/languages' );
+	public static function current_user_can_view() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
+		return ! function_exists( 'mainwp_current_user_can' ) || mainwp_current_user_can( 'extension', self::SLUG );
 	}
 }

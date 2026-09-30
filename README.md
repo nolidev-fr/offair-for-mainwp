@@ -38,7 +38,7 @@ composer install
 vendor/bin/phpcs
 ```
 
-Translations: `wp i18n make-pot . languages/offair-for-mainwp.pot`, then update `languages/offair-for-mainwp-fr_FR.po` and compile it with `msgfmt`.
+Translations are delivered by translate.wordpress.org. The package ships only `languages/offair-for-mainwp.pot` (`wp i18n make-pot . languages/offair-for-mainwp.pot`). The French `.po` in the repository is kept to be imported there, and is left out of the package by `.distignore`.
 
 A tag matching the version (`0.1.0`) deploys to WordPress.org through GitHub Actions, once the `SVN_USERNAME` and `SVN_PASSWORD` secrets are set. The tag, the plugin header, the `OFFAIR_MAINWP_VERSION` constant and the `Stable tag` of the readme must match.
 

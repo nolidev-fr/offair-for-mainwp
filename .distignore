@@ -11,3 +11,5 @@
 /vendor
 /node_modules
 *.zip
+/languages/*.po
+/languages/*.mo

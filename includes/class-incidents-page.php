@@ -67,6 +67,10 @@ class Incidents_Page {
 	 * Shows the page, inside the MainWP frame.
 	 */
 	public function render() {
+		if ( ! Plugin::current_user_can_view() ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'offair-for-mainwp' ), 403 );
+		}
+
 		do_action( 'mainwp_pageheader_extensions', OFFAIR_MAINWP_FILE ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters.

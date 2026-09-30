@@ -62,6 +62,10 @@ class Widgets {
 			$boxes = array();
 		}
 
+		if ( ! Plugin::current_user_can_view() ) {
+			return $boxes;
+		}
+
 		$this->site_id = (int) $site_id;
 
 		$box = array(
@@ -86,6 +90,10 @@ class Widgets {
 	 * Shows the widget of the current page.
 	 */
 	public function render() {
+		if ( ! Plugin::current_user_can_view() ) {
+			return;
+		}
+
 		if ( $this->site_id > 0 ) {
 			$this->render_site( $this->site_id );
 			return;
