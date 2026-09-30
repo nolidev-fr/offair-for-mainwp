@@ -23,7 +23,7 @@ class Widgets {
 	/**
 	 * Largest number of outages listed in a widget.
 	 */
-	const MAX_ROWS = 10;
+	const MAX_ROWS = 8;
 
 	/**
 	 * Plugin.
@@ -78,7 +78,7 @@ class Widgets {
 
 		if ( 0 === $this->site_id ) {
 			// Column, row, width and height on the MainWP grid: half the width, tall enough for the list of all the sites.
-			$box['layout'] = array( -1, -1, 6, 45 );
+			$box['layout'] = array( -1, -1, 6, 55 );
 		}
 
 		$boxes[] = $box;
@@ -108,6 +108,7 @@ class Widgets {
 	private function render_overview() {
 		$since      = time() - self::PERIOD;
 		$incidents  = array();
+		$short      = 0;
 		$not_seeing = 0;
 
 		foreach ( $this->plugin->sites() as $site ) {
@@ -116,7 +117,13 @@ class Widgets {
 			}
 
 			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
-				if ( $incident['end'] >= $since ) {
+				if ( $incident['end'] < $since ) {
+					continue;
+				}
+
+				if ( Sync::is_short_update( $incident ) ) {
+					++$short;
+				} else {
 					$incidents[] = $incident + array( 'site' => $site );
 				}
 			}
@@ -137,6 +144,10 @@ class Widgets {
 			$this->incidents_table( array_slice( $incidents, 0, self::MAX_ROWS ), true );
 		} else {
 			echo '<p>' . esc_html__( 'No outage in the last 30 days.', 'offair-for-mainwp' ) . '</p>';
+		}
+
+		if ( $short ) {
+			echo '<p><small>' . esc_html( Labels::short_updates( $short ) ) . '</small></p>';
 		}
 
 		if ( $not_seeing ) {
@@ -162,7 +173,16 @@ class Widgets {
 	private function render_site( $site_id ) {
 		$stored    = Sync::get( $site_id );
 		$status    = Sync::status( $stored );
-		$incidents = Sync::incidents( $stored );
+		$incidents = array();
+		$short     = 0;
+
+		foreach ( Sync::incidents( $stored ) as $incident ) {
+			if ( Sync::is_short_update( $incident ) ) {
+				++$short;
+			} else {
+				$incidents[] = $incident;
+			}
+		}
 
 		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Outages seen by visitors on this site', 'offair-for-mainwp' ) );
 
@@ -174,6 +194,10 @@ class Widgets {
 			$this->incidents_table( array_slice( $incidents, 0, self::MAX_ROWS ), false );
 		} else {
 			echo '<p>' . esc_html__( 'No outage in the last 90 days.', 'offair-for-mainwp' ) . '</p>';
+		}
+
+		if ( 'reporting' === $status && $short ) {
+			echo '<p><small>' . esc_html( Labels::short_updates( $short ) ) . '</small></p>';
 		}
 
 		if ( null !== $stored ) {

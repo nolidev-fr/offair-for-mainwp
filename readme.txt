@@ -4,7 +4,7 @@ Tags: mainwp, downtime, error page, database, monitoring
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,9 @@ MainWP checks your sites from the outside, every few minutes at best, and only t
 
 * **A widget on the overview**: the outages of the last 30 days on all your sites.
 * **A widget on the page of each site**: its recent outages, with a link to its Offair settings.
-* **An Offair page** under Add-ons: every outage of the last 90 days on every site, filtered by site and by page, and the list of the sites that do not report their outages yet.
+* **An Offair page** under Add-ons: every outage of the last 90 days on every site, filtered by site and by page, the downtime of each site over 30 days, and the sites that do not report their outages yet.
+
+Each outage shows its page in color: database error, PHP error or maintenance. The maintenance pages shown less than a minute, as during most updates, are counted on one line instead of filling the lists. The Offair page can list them too.
 
 The state of the Offair pages of each site (in place, missing, needing regeneration) is not repeated here: Offair reports it in Site Health, which MainWP already monitors.
 
@@ -61,11 +63,22 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 
 == Screenshots ==
 
-1. The Offair page under Add-ons: every outage of the last 90 days on every site, and whether each site reports its outages.
+1. The Offair page under Add-ons: every outage of the last 90 days on every site, the downtime of each site over 30 days, and whether each site reports its outages.
 2. The widget on the MainWP overview: the outages of the last 30 days on all your sites.
 3. The widget on the page of a site: its recent outages and a link to its Offair settings.
 
 == Changelog ==
 
+= 0.2.0 =
+* New: each outage shows its page in color, database error, PHP error or maintenance.
+* New: the maintenance pages shown less than a minute, as during most updates, are counted on one line in the widgets. The Offair page hides them unless you ask for them.
+* New: downtime of each site over the last 30 days, on the Offair page.
+* The overview widget lists the 8 most recent outages and starts taller, so its notes stay visible.
+
 = 0.1.0 =
 * First release: outages of all the sites on the overview, on the page of each site and on a page of their own.
+
+== Upgrade Notice ==
+
+= 0.2.0 =
+Outages in color by page, short maintenance pages during updates grouped on one line, and the downtime of each site over 30 days.

@@ -136,6 +136,38 @@ class Labels {
 	}
 
 	/**
+	 * A number of minutes, in hours and minutes past an hour.
+	 *
+	 * @param int $minutes Minutes.
+	 * @return string
+	 */
+	public static function minutes( $minutes ) {
+		$minutes = (int) $minutes;
+
+		if ( $minutes < 60 ) {
+			/* translators: %d: number of minutes. */
+			return sprintf( __( '%d min', 'offair-for-mainwp' ), $minutes );
+		}
+
+		/* translators: 1: number of hours, 2: number of minutes. */
+		return sprintf( __( '%1$d h %2$02d min', 'offair-for-mainwp' ), intdiv( $minutes, 60 ), $minutes % 60 );
+	}
+
+	/**
+	 * Line counting the short maintenance pages left out of a list.
+	 *
+	 * @param int $count Number of short maintenance pages.
+	 * @return string
+	 */
+	public static function short_updates( $count ) {
+		return sprintf(
+			/* translators: %d: number of maintenance pages. */
+			_n( 'Plus %d maintenance page shown less than a minute, during an update.', 'Plus %d maintenance pages shown less than a minute, during updates.', $count, 'offair-for-mainwp' ),
+			$count
+		);
+	}
+
+	/**
 	 * Link that opens the Offair settings of a site, logged in through MainWP.
 	 *
 	 * @param int $site_id Site ID.

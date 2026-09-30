@@ -3,7 +3,7 @@
  * Plugin Name:       Offair for MainWP
  * Plugin URI:        https://github.com/nolidev-fr/offair-for-mainwp
  * Description:       Shows in your MainWP Dashboard the outages your visitors ran into on all your sites, recorded by Offair.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Requires Plugins:  mainwp
@@ -23,7 +23,7 @@ if ( defined( 'OFFAIR_MAINWP_VERSION' ) ) {
 	return;
 }
 
-define( 'OFFAIR_MAINWP_VERSION', '0.1.0' );
+define( 'OFFAIR_MAINWP_VERSION', '0.2.0' );
 define( 'OFFAIR_MAINWP_FILE', __FILE__ );
 define( 'OFFAIR_MAINWP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OFFAIR_MAINWP_BASENAME', plugin_basename( __FILE__ ) );

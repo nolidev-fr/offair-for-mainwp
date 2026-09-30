@@ -76,6 +76,7 @@ class Incidents_Page {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters.
 		$site_filter   = isset( $_GET['offair_site'] ) ? absint( $_GET['offair_site'] ) : 0;
 		$screen_filter = isset( $_GET['offair_screen'] ) ? sanitize_key( wp_unslash( $_GET['offair_screen'] ) ) : '';
+		$show_short    = ! empty( $_GET['offair_short'] );
 		// phpcs:enable
 
 		if ( ! array_key_exists( $screen_filter, Labels::screens() ) ) {
@@ -84,6 +85,7 @@ class Incidents_Page {
 
 		$sites     = $this->plugin->sites();
 		$incidents = array();
+		$hidden    = 0;
 
 		foreach ( $sites as $site ) {
 			if ( $site_filter && $site_filter !== $site['id'] ) {
@@ -91,9 +93,16 @@ class Incidents_Page {
 			}
 
 			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
-				if ( '' === $screen_filter || $screen_filter === $incident['screen'] ) {
-					$incidents[] = $incident + array( 'site' => $site );
+				if ( '' !== $screen_filter && $screen_filter !== $incident['screen'] ) {
+					continue;
 				}
+
+				if ( ! $show_short && Sync::is_short_update( $incident ) ) {
+					++$hidden;
+					continue;
+				}
+
+				$incidents[] = $incident + array( 'site' => $site );
 			}
 		}
 
@@ -106,7 +115,7 @@ class Incidents_Page {
 
 		echo '<div class="ui segment">';
 
-		$this->render_filters( $sites, $site_filter, $screen_filter );
+		$this->render_filters( $sites, $site_filter, $screen_filter, $show_short );
 
 		echo '<h3 class="ui header">' . esc_html__( 'Outages of the last 90 days', 'offair-for-mainwp' ) . '</h3>';
 
@@ -130,6 +139,20 @@ class Incidents_Page {
 			echo '<p>' . esc_html__( 'No outage recorded.', 'offair-for-mainwp' ) . '</p>';
 		}
 
+		if ( $hidden ) {
+			$show_all = $this->url(
+				array_filter(
+					array(
+						'offair_site'   => $site_filter,
+						'offair_screen' => $screen_filter,
+						'offair_short'  => 1,
+					)
+				)
+			);
+
+			echo '<p><small>' . esc_html( Labels::short_updates( $hidden ) ) . ' <a href="' . esc_url( $show_all ) . '">' . esc_html__( 'Show them', 'offair-for-mainwp' ) . '</a></small></p>';
+		}
+
 		echo '<p><small>' . esc_html__( 'Offair records an outage when a visitor sees one of its pages. An outage while nobody visits a site cannot be seen. The data is updated at each MainWP synchronization.', 'offair-for-mainwp' ) . '</small></p>';
 
 		$this->render_sites( $sites );
@@ -145,9 +168,10 @@ class Incidents_Page {
 	 * @param array[] $sites         Sites.
 	 * @param int     $site_filter   Selected site.
 	 * @param string  $screen_filter Selected page.
+	 * @param bool    $show_short    Whether the short maintenance pages are listed.
 	 */
-	private function render_filters( array $sites, $site_filter, $screen_filter ) {
-		echo '<form method="get" class="ui form"><input type="hidden" name="page" value="' . esc_attr( self::PAGE ) . '"><div class="three fields">';
+	private function render_filters( array $sites, $site_filter, $screen_filter, $show_short ) {
+		echo '<form method="get" class="ui form"><input type="hidden" name="page" value="' . esc_attr( self::PAGE ) . '"><div class="four fields">';
 
 		echo '<div class="field"><label for="offair-site">' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</label><select id="offair-site" name="offair_site" class="ui dropdown"><option value="0">' . esc_html__( 'All sites', 'offair-for-mainwp' ) . '</option>';
 		foreach ( $sites as $site ) {
@@ -160,6 +184,8 @@ class Incidents_Page {
 			echo '<option value="' . esc_attr( $key ) . '"' . selected( $screen_filter, $key, false ) . '>' . esc_html( $label ) . '</option>';
 		}
 		echo '</select></div>';
+
+		echo '<div class="field"><label>&nbsp;</label><div class="ui checkbox"><input type="checkbox" id="offair-short" name="offair_short" value="1"' . checked( $show_short, true, false ) . '><label for="offair-short">' . esc_html__( 'Include maintenance pages shown less than a minute', 'offair-for-mainwp' ) . '</label></div></div>';
 
 		echo '<div class="field"><label>&nbsp;</label><button type="submit" class="ui green button">' . esc_html__( 'Filter', 'offair-for-mainwp' ) . '</button></div>';
 
@@ -174,12 +200,14 @@ class Incidents_Page {
 	private function render_sites( array $sites ) {
 		echo '<h3 class="ui header">' . esc_html__( 'Sites', 'offair-for-mainwp' ) . '</h3>';
 		echo '<table class="ui single line table"><thead><tr>';
-		echo '<th>' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'State', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Offair version', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Last outage', 'offair-for-mainwp' ) . '</th>';
+		echo '<th>' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'State', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Offair version', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Last outage', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Downtime, 30 days', 'offair-for-mainwp' ) . '</th>';
 		echo '</tr></thead><tbody>';
+
+		$since = time() - 30 * DAY_IN_SECONDS;
 
 		foreach ( $sites as $site ) {
 			$stored  = $site['stored'];
-			$last    = current( Sync::incidents( $stored ) );
+			$last    = Sync::last_outage( $stored );
 			$version = '';
 
 			if ( ! empty( $stored['offair']['version'] ) ) {
@@ -192,7 +220,8 @@ class Incidents_Page {
 			echo '<td><a href="' . esc_url( Widgets::site_url( $site['id'] ) ) . '">' . esc_html( $site['name'] ) . '</a></td>';
 			echo '<td>' . Labels::badge( Sync::status( $stored ) ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
 			echo '<td>' . esc_html( $version ) . '</td>';
-			echo '<td>' . esc_html( $last ? Labels::date( $last['start'] ) : '' ) . '</td>';
+			echo '<td>' . esc_html( null !== $last ? Labels::date( $last['start'] ) : '' ) . '</td>';
+			echo '<td>' . esc_html( 'reporting' === Sync::status( $stored ) ? Labels::minutes( Sync::downtime_minutes( $stored, $since ) ) : '' ) . '</td>';
 			echo '</tr>';
 		}
 

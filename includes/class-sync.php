@@ -218,6 +218,56 @@ class Sync {
 	}
 
 	/**
+	 * Whether an outage is a maintenance page shown less than a minute, as
+	 * during most updates.
+	 *
+	 * @param array $incident Outage.
+	 * @return bool
+	 */
+	public static function is_short_update( array $incident ) {
+		return 'maintenance' === $incident['screen'] && (int) $incident['end'] - (int) $incident['start'] < MINUTE_IN_SECONDS;
+	}
+
+	/**
+	 * Minutes with an error page shown since a given time, all pages together,
+	 * without the maintenance pages shown less than a minute.
+	 *
+	 * @param array|null $stored Stored data of the site.
+	 * @param int        $since  Unix time.
+	 * @return int
+	 */
+	public static function downtime_minutes( $stored, $since ) {
+		$minutes = 0;
+
+		foreach ( self::incidents( $stored ) as $incident ) {
+			if ( (int) $incident['end'] >= $since && ! self::is_short_update( $incident ) ) {
+				$minutes += max( 1, (int) $incident['count'] );
+			}
+		}
+
+		return $minutes;
+	}
+
+	/**
+	 * Most recent outage of a site, without the maintenance pages shown less
+	 * than a minute.
+	 *
+	 * @param array|null $stored Stored data of the site.
+	 * @return array|null
+	 */
+	public static function last_outage( $stored ) {
+		$last = null;
+
+		foreach ( self::incidents( $stored ) as $incident ) {
+			if ( ! self::is_short_update( $incident ) && ( null === $last || $incident['start'] > $last['start'] ) ) {
+				$last = $incident;
+			}
+		}
+
+		return $last;
+	}
+
+	/**
 	 * Outages of a site, most recent first.
 	 *
 	 * @param array|null $stored Stored data of the site.
