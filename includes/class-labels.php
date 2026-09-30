@@ -69,6 +69,23 @@ class Labels {
 	}
 
 	/**
+	 * Name of a page after a dot in its color, the colors of the Offair test card.
+	 *
+	 * @param string $screen db, maintenance or php.
+	 * @return string Escaped markup.
+	 */
+	public static function screen_badge( $screen ) {
+		$colors = array(
+			'db'          => '#d3766a',
+			'maintenance' => '#e6c76a',
+			'php'         => '#6d7fb3',
+		);
+		$color  = isset( $colors[ $screen ] ) ? $colors[ $screen ] : '#8c8f94';
+
+		return '<span class="ui empty circular mini label" style="background-color:' . esc_attr( $color ) . ';border-color:' . esc_attr( $color ) . '"></span> ' . esc_html( self::screen( $screen ) );
+	}
+
+	/**
 	 * Names of the pages.
 	 *
 	 * @return array<string, string>

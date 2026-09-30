@@ -211,7 +211,7 @@ class Widgets {
 			if ( $with_site ) {
 				echo '<td><a href="' . esc_url( self::site_url( $incident['site']['id'] ) ) . '">' . esc_html( $incident['site']['name'] ) . '</a></td>';
 			}
-			echo '<td>' . esc_html( Labels::screen( $incident['screen'] ) ) . '</td>';
+			echo '<td>' . Labels::screen_badge( $incident['screen'] ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::screen_badge().
 			echo '<td>' . esc_html( Labels::short_date( $incident['start'] ) ) . '</td>';
 			echo '<td>' . esc_html( Labels::duration( $incident ) ) . '</td>';
 			echo '</tr>';

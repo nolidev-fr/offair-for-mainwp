@@ -118,7 +118,7 @@ class Incidents_Page {
 			foreach ( $incidents as $incident ) {
 				echo '<tr>';
 				echo '<td><a href="' . esc_url( Widgets::site_url( $incident['site']['id'] ) ) . '">' . esc_html( $incident['site']['name'] ) . '</a></td>';
-				echo '<td>' . esc_html( Labels::screen( $incident['screen'] ) ) . '</td>';
+				echo '<td>' . Labels::screen_badge( $incident['screen'] ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::screen_badge().
 				echo '<td>' . esc_html( Labels::date( $incident['start'] ) ) . '</td>';
 				echo '<td>' . esc_html( Labels::duration( $incident ) ) . '</td>';
 				echo '<td>' . esc_html( $incident['status'] ? (string) $incident['status'] : '' ) . '</td>';
