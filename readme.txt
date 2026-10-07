@@ -4,7 +4,7 @@ Tags: mainwp, downtime, error page, database, monitoring
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 
 == Changelog ==
 
+= 0.2.1 =
+* Fix: the Open the Offair settings button of a site opens its settings again, instead of stopping on an Unauthorized request error from MainWP.
+
 = 0.2.0 =
 * New: each outage shows its page in color, database error, PHP error or maintenance.
 * New: the maintenance pages shown less than a minute, as during most updates, are counted on one line in the widgets. The Offair page hides them unless you ask for them.
@@ -79,6 +82,9 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 * First release: outages of all the sites on the overview, on the page of each site and on a page of their own.
 
 == Upgrade Notice ==
+
+= 0.2.1 =
+The Open the Offair settings button works again.
 
 = 0.2.0 =
 Outages in color by page, short maintenance pages during updates grouped on one line, and the downtime of each site over 30 days.
