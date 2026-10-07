@@ -170,16 +170,20 @@ class Labels {
 	/**
 	 * Link that opens the Offair settings of a site, logged in through MainWP.
 	 *
+	 * MainWP refuses to open a site without the _opennonce it checks against
+	 * mainwp-admin-nonce, as in the links it builds itself.
+	 *
 	 * @param int $site_id Site ID.
 	 * @return string
 	 */
 	public static function settings_url( $site_id ) {
 		return add_query_arg(
 			array(
-				'page'      => 'SiteOpen',
-				'newWindow' => 'yes',
-				'websiteid' => (int) $site_id,
-				'location'  => base64_encode( 'options-general.php?page=offair' ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- MainWP expects the location in base64.
+				'page'       => 'SiteOpen',
+				'newWindow'  => 'yes',
+				'websiteid'  => (int) $site_id,
+				'location'   => rawurlencode( base64_encode( 'options-general.php?page=offair' ) ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- MainWP expects the location in base64.
+				'_opennonce' => wp_create_nonce( 'mainwp-admin-nonce' ),
 			),
 			admin_url( 'admin.php' )
 		);
