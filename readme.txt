@@ -1,10 +1,10 @@
 === Offair for MainWP ===
 Contributors: nolidev
 Tags: mainwp, downtime, error page, database, monitoring
-Requires at least: 6.0
+Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,16 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 
 == Changelog ==
 
+= 0.2.2 =
+* Fix: on a site that is part of a network, the Open the Offair settings button now opens the settings in the network admin (with Offair 1.5.2 or later on the site).
+* Fix: the 30-day downtime counted whole outages that started before the period, and outages of two pages at the same time twice.
+* Fix: Offair installed in another folder than offair, for example from a zip, was shown as not installed.
+* Fix: installed in another folder than offair-for-mainwp, the extension page links and the access set in MainWP did not work.
+* Up to 100 outages are kept per site, and the short maintenance pages of updates no longer push real outages out of the list (with Offair 1.5.2 or later). A note says when older outages of the period are missing.
+* The overview widget says when no site reports its outages yet, instead of showing no outage.
+* The Offair page lists 100 outages per page, and the screens read the data of all the sites in one query.
+* Requires WordPress 6.2, like MainWP.
+
 = 0.2.1 =
 * Fix: the Open the Offair settings button of a site opens its settings again, instead of stopping on an Unauthorized request error from MainWP.
 
@@ -82,6 +92,9 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 * First release: outages of all the sites on the overview, on the page of each site and on a page of their own.
 
 == Upgrade Notice ==
+
+= 0.2.2 =
+Correct settings link on networks, exact 30-day downtime, and more outages kept per site.
 
 = 0.2.1 =
 The Open the Offair settings button works again.
