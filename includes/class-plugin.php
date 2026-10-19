@@ -85,7 +85,7 @@ final class Plugin {
 			'api'      => self::SLUG,
 			'mainwp'   => false,
 			'callback' => array( $this->incidents_page, 'render' ),
-			'icon'     => '',
+			'icon'     => plugins_url( 'assets/icon.svg', OFFAIR_MAINWP_FILE ),
 		);
 
 		return $extensions;

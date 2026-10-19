@@ -4,7 +4,7 @@ Tags: mainwp, downtime, error page, database, monitoring
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.2
+Stable tag: 0.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 
 == Changelog ==
 
+= 0.2.3 =
+* New icon and banner, in line with the new look of Offair. The icon now shows on the extension card of the Add-ons page.
+
 = 0.2.2 =
 * Fix: on a site that is part of a network, the Open the Offair settings button now opens the settings in the network admin (with Offair 1.5.2 or later on the site).
 * Fix: the 30-day downtime counted whole outages that started before the period, and outages of two pages at the same time twice.
@@ -92,6 +95,9 @@ No. Offair for MainWP is made by Nolidev, the author of Offair. MainWP is a trad
 * First release: outages of all the sites on the overview, on the page of each site and on a page of their own.
 
 == Upgrade Notice ==
+
+= 0.2.3 =
+New icon, also shown in the MainWP Add-ons page.
 
 = 0.2.2 =
 Correct settings link on networks, exact 30-day downtime, and more outages kept per site.
