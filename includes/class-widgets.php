@@ -33,13 +33,6 @@ class Widgets {
 	private $plugin;
 
 	/**
-	 * Site whose page is being shown, 0 on the overview.
-	 *
-	 * @var int
-	 */
-	private $site_id = 0;
-
-	/**
 	 * Registers the hooks.
 	 *
 	 * @param Plugin $plugin Plugin.
@@ -66,17 +59,20 @@ class Widgets {
 			return $boxes;
 		}
 
-		$this->site_id = (int) $site_id;
+		$site_id = (int) $site_id;
 
+		// The site is bound to the widget itself: MainWP may build other lists of widgets before this one renders.
 		$box = array(
 			'id'            => 'offair',
 			'plugin'        => OFFAIR_MAINWP_FILE,
 			'key'           => $this->plugin->key(),
 			'metabox_title' => __( 'Offair', 'offair-for-mainwp' ),
-			'callback'      => array( $this, 'render' ),
+			'callback'      => function () use ( $site_id ) {
+				$this->render( $site_id );
+			},
 		);
 
-		if ( 0 === $this->site_id ) {
+		if ( 0 === $site_id ) {
 			// Column, row, width and height on the MainWP grid: half the width, tall enough for the list of all the sites.
 			$box['layout'] = array( -1, -1, 6, 55 );
 		}
@@ -87,15 +83,19 @@ class Widgets {
 	}
 
 	/**
-	 * Shows the widget of the current page.
+	 * Shows the widget of the overview, or of the page of a site.
+	 *
+	 * @param int $site_id Site ID, 0 on the overview.
 	 */
-	public function render() {
+	public function render( $site_id = 0 ) {
 		if ( ! Plugin::current_user_can_view() ) {
 			return;
 		}
 
-		if ( $this->site_id > 0 ) {
-			$this->render_site( $this->site_id );
+		if ( $site_id > 0 ) {
+			if ( $this->plugin->can_see_site( $site_id ) ) {
+				$this->render_site( $site_id );
+			}
 			return;
 		}
 
@@ -106,35 +106,16 @@ class Widgets {
 	 * Widget of the overview.
 	 */
 	private function render_overview() {
-		$since      = time() - self::PERIOD;
-		$incidents  = array();
+		$sites      = $this->plugin->sites();
 		$short      = 0;
+		$incidents  = Sync::collect( $sites, time() - self::PERIOD, '', false, $short );
 		$not_seeing = 0;
 
-		foreach ( $this->plugin->sites() as $site ) {
+		foreach ( $sites as $site ) {
 			if ( 'reporting' !== Sync::status( $site['stored'] ) ) {
 				++$not_seeing;
 			}
-
-			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
-				if ( $incident['end'] < $since ) {
-					continue;
-				}
-
-				if ( Sync::is_short_update( $incident ) ) {
-					++$short;
-				} else {
-					$incidents[] = $incident + array( 'site' => $site );
-				}
-			}
 		}
-
-		usort(
-			$incidents,
-			static function ( $a, $b ) {
-				return $b['start'] - $a['start'];
-			}
-		);
 
 		$this->header( __( 'Offair', 'offair-for-mainwp' ), __( 'Outages seen by visitors in the last 30 days, all sites', 'offair-for-mainwp' ) );
 
@@ -142,6 +123,9 @@ class Widgets {
 
 		if ( $incidents ) {
 			$this->incidents_table( array_slice( $incidents, 0, self::MAX_ROWS ), true );
+		} elseif ( $sites && count( $sites ) === $not_seeing ) {
+			// No data is not good news.
+			echo '<p>' . esc_html__( 'No site reports its outages yet.', 'offair-for-mainwp' ) . '</p>';
 		} else {
 			echo '<p>' . esc_html__( 'No outage in the last 30 days.', 'offair-for-mainwp' ) . '</p>';
 		}
@@ -200,6 +184,10 @@ class Widgets {
 			echo '<p><small>' . esc_html( Labels::short_updates( $short ) ) . '</small></p>';
 		}
 
+		if ( 'reporting' === $status && Sync::is_truncated( $stored ) ) {
+			echo '<p><small>' . esc_html( Labels::truncated() ) . '</small></p>';
+		}
+
 		if ( null !== $stored ) {
 			echo '<p><small>' . esc_html(
 				sprintf(
@@ -213,7 +201,7 @@ class Widgets {
 		echo '</div>';
 
 		if ( 'reporting' === $status ) {
-			$this->footer( Labels::settings_url( $site_id ), __( 'Open the Offair settings', 'offair-for-mainwp' ), true );
+			$this->footer( Labels::settings_url( $site_id, $stored ), __( 'Open the Offair settings', 'offair-for-mainwp' ), true );
 		}
 	}
 

@@ -40,9 +40,15 @@ class Sync {
 	const SCREENS = array( 'db', 'maintenance', 'php' );
 
 	/**
-	 * Largest number of outages kept per site.
+	 * Largest number of outages kept per site. Offair 1.5.2 and later sends up
+	 * to 50 outages plus 50 short maintenance pages.
 	 */
-	const MAX_INCIDENTS = 50;
+	const MAX_INCIDENTS = 100;
+
+	/**
+	 * Settings pages of Offair on a child site, relative to wp-admin.
+	 */
+	const SETTINGS_PAGES = array( 'options-general.php?page=offair', 'network/settings.php?page=offair' );
 
 	/**
 	 * Registers the synchronization hooks.
@@ -114,7 +120,10 @@ class Sync {
 
 		return array(
 			'version'   => self::sanitize_version( $data['version'] ),
+			'settings'  => isset( $data['settings'] ) && in_array( $data['settings'], self::SETTINGS_PAGES, true ) ? $data['settings'] : self::SETTINGS_PAGES[0],
 			'incidents' => $incidents,
+			// Sent by Offair 1.5.2 and later: false when older outages of the period were left out.
+			'complete'  => ! isset( $data['complete'] ) || ! empty( $data['complete'] ),
 		);
 	}
 
@@ -151,7 +160,8 @@ class Sync {
 	}
 
 	/**
-	 * Finds Offair in the plugins of the site.
+	 * Finds Offair in the plugins of the site: in its usual folder, or in any
+	 * folder when its main file and name match, as after an install from a zip.
 	 *
 	 * @param mixed $plugins Plugins, as sent by MainWP Child or as JSON.
 	 * @return array|null Version and whether it is active, or null when absent.
@@ -161,16 +171,29 @@ class Sync {
 			$plugins = json_decode( $plugins, true );
 		}
 
+		$found = null;
+
 		foreach ( is_array( $plugins ) ? $plugins : array() as $plugin ) {
-			if ( is_array( $plugin ) && isset( $plugin['slug'] ) && self::OFFAIR_PLUGIN === $plugin['slug'] ) {
-				return array(
+			if ( ! is_array( $plugin ) || ! isset( $plugin['slug'] ) || ! is_string( $plugin['slug'] ) ) {
+				continue;
+			}
+
+			$exact = self::OFFAIR_PLUGIN === $plugin['slug'];
+			$moved = 'offair.php' === basename( $plugin['slug'] ) && isset( $plugin['name'] ) && 0 === strpos( (string) $plugin['name'], 'Offair' );
+
+			if ( $exact || ( null === $found && $moved ) ) {
+				$found = array(
 					'version' => isset( $plugin['version'] ) ? self::sanitize_version( $plugin['version'] ) : '',
 					'active'  => ! empty( $plugin['active'] ),
 				);
 			}
+
+			if ( $exact ) {
+				break;
+			}
 		}
 
-		return null;
+		return $found;
 	}
 
 	/**
@@ -180,7 +203,56 @@ class Sync {
 	 * @return array|null Null when the site has not been synchronized since the extension was installed.
 	 */
 	public static function get( $site_id ) {
-		$json   = apply_filters( 'mainwp_getwebsiteoptions', false, (int) $site_id, self::OPTION ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
+		$json = apply_filters( 'mainwp_getwebsiteoptions', false, (int) $site_id, self::OPTION ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
+
+		return self::decode( $json );
+	}
+
+	/**
+	 * Stored data of several sites, read in one query from the table where
+	 * MainWP keeps the options of the sites, instead of one query per site.
+	 *
+	 * @param int[] $site_ids Site IDs.
+	 * @return array<int, array|null> Stored data per site ID.
+	 */
+	public static function get_many( array $site_ids ) {
+		global $wpdb;
+
+		$site_ids = array_values( array_unique( array_filter( array_map( 'intval', $site_ids ) ) ) );
+		$stored   = array_fill_keys( $site_ids, null );
+
+		if ( ! $site_ids ) {
+			return $stored;
+		}
+
+		// One query for every site, filtered here: far fewer queries than one per site.
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT wpid, value FROM %i WHERE name = %s', $wpdb->prefix . 'mainwp_wp_options', self::OPTION ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- Table of MainWP, read once per screen.
+
+		// MainWP may store its options differently one day: read them site by site then.
+		if ( ! is_array( $rows ) || '' !== $wpdb->last_error ) {
+			foreach ( $site_ids as $site_id ) {
+				$stored[ $site_id ] = self::get( $site_id );
+			}
+
+			return $stored;
+		}
+
+		foreach ( $rows as $row ) {
+			if ( array_key_exists( (int) $row['wpid'], $stored ) ) {
+				$stored[ (int) $row['wpid'] ] = self::decode( $row['value'] );
+			}
+		}
+
+		return $stored;
+	}
+
+	/**
+	 * Stored data from its JSON.
+	 *
+	 * @param mixed $json Stored value.
+	 * @return array|null
+	 */
+	private static function decode( $json ) {
 		$stored = is_string( $json ) && '' !== $json ? json_decode( $json, true ) : null;
 
 		return is_array( $stored ) && isset( $stored['synced'] ) ? $stored : null;
@@ -229,23 +301,96 @@ class Sync {
 	}
 
 	/**
-	 * Minutes with an error page shown since a given time, all pages together,
-	 * without the maintenance pages shown less than a minute.
+	 * Minutes with an error page shown since a given time, without the
+	 * maintenance pages shown less than a minute.
+	 *
+	 * Each outage covers its first to its last page plus the minute after it,
+	 * since Offair records a page once a minute at most. Only the part after
+	 * $since counts, and outages of different pages at the same time count
+	 * once.
 	 *
 	 * @param array|null $stored Stored data of the site.
 	 * @param int        $since  Unix time.
 	 * @return int
 	 */
 	public static function downtime_minutes( $stored, $since ) {
-		$minutes = 0;
+		$spans = array();
 
 		foreach ( self::incidents( $stored ) as $incident ) {
-			if ( (int) $incident['end'] >= $since && ! self::is_short_update( $incident ) ) {
-				$minutes += max( 1, (int) $incident['count'] );
+			$end = (int) $incident['end'] + MINUTE_IN_SECONDS;
+
+			if ( $end > $since && ! self::is_short_update( $incident ) ) {
+				$spans[] = array( max( (int) $since, (int) $incident['start'] ), $end );
 			}
 		}
 
-		return $minutes;
+		usort(
+			$spans,
+			static function ( $a, $b ) {
+				return $a[0] <=> $b[0];
+			}
+		);
+
+		$seconds = 0;
+		$current = null;
+
+		foreach ( $spans as $span ) {
+			if ( null !== $current && $span[0] <= $current[1] ) {
+				$current[1] = max( $current[1], $span[1] );
+				continue;
+			}
+
+			if ( null !== $current ) {
+				$seconds += $current[1] - $current[0];
+			}
+
+			$current = $span;
+		}
+
+		if ( null !== $current ) {
+			$seconds += $current[1] - $current[0];
+		}
+
+		return (int) ceil( $seconds / MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * Outages of several sites, each with its site, most recent first.
+	 *
+	 * @param array[] $sites      Sites, from Plugin::sites().
+	 * @param int     $since      Only the outages that ended after this Unix time, 0 for all.
+	 * @param string  $screen     Only this page, or every page when empty.
+	 * @param bool    $with_short Whether to keep the maintenance pages shown less than a minute.
+	 * @param int     $short      Set to the number of short maintenance pages left out.
+	 * @return array[]
+	 */
+	public static function collect( array $sites, $since = 0, $screen = '', $with_short = false, &$short = 0 ) {
+		$incidents = array();
+		$short     = 0;
+
+		foreach ( $sites as $site ) {
+			foreach ( self::incidents( $site['stored'] ) as $incident ) {
+				if ( (int) $incident['end'] < $since || ( '' !== $screen && $screen !== $incident['screen'] ) ) {
+					continue;
+				}
+
+				if ( ! $with_short && self::is_short_update( $incident ) ) {
+					++$short;
+					continue;
+				}
+
+				$incidents[] = $incident + array( 'site' => $site );
+			}
+		}
+
+		usort(
+			$incidents,
+			static function ( $a, $b ) {
+				return $b['start'] <=> $a['start'];
+			}
+		);
+
+		return $incidents;
 	}
 
 	/**
@@ -265,6 +410,17 @@ class Sync {
 		}
 
 		return $last;
+	}
+
+	/**
+	 * Whether the site left out older outages of the period. Data stored
+	 * before the site sent this flag is taken as complete.
+	 *
+	 * @param array|null $stored Stored data of the site.
+	 * @return bool
+	 */
+	public static function is_truncated( $stored ) {
+		return isset( $stored['offair']['complete'] ) && false === $stored['offair']['complete'];
 	}
 
 	/**

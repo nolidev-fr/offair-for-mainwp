@@ -16,9 +16,9 @@ defined( 'ABSPATH' ) || exit;
 class Incidents_Page {
 
 	/**
-	 * Page name, which MainWP makes from the folder of the extension.
+	 * Outages listed per page of the table.
 	 */
-	const PAGE = 'Extensions-Offair-For-Mainwp';
+	const PER_PAGE = 100;
 
 	/**
 	 * Plugin.
@@ -46,7 +46,7 @@ class Incidents_Page {
 	 */
 	public function title( $title ) {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only compares the page name.
-		if ( isset( $_GET['page'] ) && self::PAGE === $_GET['page'] ) {
+		if ( isset( $_GET['page'] ) && self::page() === $_GET['page'] ) {
 			return __( 'Offair for MainWP', 'offair-for-mainwp' );
 		}
 
@@ -54,13 +54,23 @@ class Incidents_Page {
 	}
 
 	/**
-	 * Address of the page. MainWP names it after the folder of the extension.
+	 * Page name, which MainWP makes from the folder of the extension, the way
+	 * MainWP_Extensions_Handler does: Extensions-Offair-For-Mainwp.
+	 *
+	 * @return string
+	 */
+	public static function page() {
+		return 'Extensions-' . str_replace( ' ', '-', ucwords( str_replace( '-', ' ', Plugin::folder() ) ) );
+	}
+
+	/**
+	 * Address of the page.
 	 *
 	 * @param array $args Query arguments.
 	 * @return string
 	 */
 	public function url( array $args = array() ) {
-		return add_query_arg( array_merge( array( 'page' => self::PAGE ), $args ), admin_url( 'admin.php' ) );
+		return add_query_arg( array_merge( array( 'page' => self::page() ), $args ), admin_url( 'admin.php' ) );
 	}
 
 	/**
@@ -77,41 +87,33 @@ class Incidents_Page {
 		$site_filter   = isset( $_GET['offair_site'] ) ? absint( $_GET['offair_site'] ) : 0;
 		$screen_filter = isset( $_GET['offair_screen'] ) ? sanitize_key( wp_unslash( $_GET['offair_screen'] ) ) : '';
 		$show_short    = ! empty( $_GET['offair_short'] );
+		$paged         = isset( $_GET['offair_paged'] ) ? max( 1, absint( $_GET['offair_paged'] ) ) : 1;
 		// phpcs:enable
 
 		if ( ! array_key_exists( $screen_filter, Labels::screens() ) ) {
 			$screen_filter = '';
 		}
 
-		$sites     = $this->plugin->sites();
-		$incidents = array();
-		$hidden    = 0;
-
-		foreach ( $sites as $site ) {
-			if ( $site_filter && $site_filter !== $site['id'] ) {
-				continue;
-			}
-
-			foreach ( Sync::incidents( $site['stored'] ) as $incident ) {
-				if ( '' !== $screen_filter && $screen_filter !== $incident['screen'] ) {
-					continue;
-				}
-
-				if ( ! $show_short && Sync::is_short_update( $incident ) ) {
-					++$hidden;
-					continue;
-				}
-
-				$incidents[] = $incident + array( 'site' => $site );
-			}
-		}
-
-		usort(
-			$incidents,
-			static function ( $a, $b ) {
-				return $b['start'] - $a['start'];
+		$sites    = $this->plugin->sites();
+		$selected = array_filter(
+			$sites,
+			static function ( $site ) use ( $site_filter ) {
+				return ! $site_filter || $site_filter === $site['id'];
 			}
 		);
+		$hidden   = 0;
+		$all      = Sync::collect( $selected, 0, $screen_filter, $show_short, $hidden );
+		$pages    = max( 1, (int) ceil( count( $all ) / self::PER_PAGE ) );
+		$paged    = min( $paged, $pages );
+		$filters  = array_filter(
+			array(
+				'offair_site'   => $site_filter,
+				'offair_screen' => $screen_filter,
+				'offair_short'  => $show_short ? 1 : 0,
+			)
+		);
+
+		$incidents = array_slice( $all, ( $paged - 1 ) * self::PER_PAGE, self::PER_PAGE );
 
 		echo '<div class="ui segment">';
 
@@ -135,20 +137,21 @@ class Incidents_Page {
 			}
 
 			echo '</tbody></table>';
+
+			$this->render_pagination( $paged, $pages, $filters );
 		} else {
 			echo '<p>' . esc_html__( 'No outage recorded.', 'offair-for-mainwp' ) . '</p>';
 		}
 
+		foreach ( $selected as $site ) {
+			if ( Sync::is_truncated( $site['stored'] ) ) {
+				echo '<p><small>' . esc_html( Labels::truncated() ) . '</small></p>';
+				break;
+			}
+		}
+
 		if ( $hidden ) {
-			$show_all = $this->url(
-				array_filter(
-					array(
-						'offair_site'   => $site_filter,
-						'offair_screen' => $screen_filter,
-						'offair_short'  => 1,
-					)
-				)
-			);
+			$show_all = $this->url( array_merge( $filters, array( 'offair_short' => 1 ) ) );
 
 			echo '<p><small>' . esc_html( Labels::short_updates( $hidden ) ) . ' <a href="' . esc_url( $show_all ) . '">' . esc_html__( 'Show them', 'offair-for-mainwp' ) . '</a></small></p>';
 		}
@@ -163,6 +166,26 @@ class Incidents_Page {
 	}
 
 	/**
+	 * Links to the other pages of the table.
+	 *
+	 * @param int   $paged   Current page.
+	 * @param int   $pages   Number of pages.
+	 * @param array $filters Filters to keep in the links.
+	 */
+	private function render_pagination( $paged, $pages, array $filters ) {
+		if ( $pages < 2 ) {
+			return;
+		}
+
+		echo '<div class="ui pagination menu">';
+		for ( $page = 1; $page <= $pages; $page++ ) {
+			$class = $page === $paged ? 'active item' : 'item';
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $this->url( array_merge( $filters, array( 'offair_paged' => $page ) ) ) ) . '">' . esc_html( number_format_i18n( $page ) ) . '</a>';
+		}
+		echo '</div>';
+	}
+
+	/**
 	 * Filters by site and by page.
 	 *
 	 * @param array[] $sites         Sites.
@@ -171,7 +194,7 @@ class Incidents_Page {
 	 * @param bool    $show_short    Whether the short maintenance pages are listed.
 	 */
 	private function render_filters( array $sites, $site_filter, $screen_filter, $show_short ) {
-		echo '<form method="get" class="ui form"><input type="hidden" name="page" value="' . esc_attr( self::PAGE ) . '"><div class="four fields">';
+		echo '<form method="get" class="ui form"><input type="hidden" name="page" value="' . esc_attr( self::page() ) . '"><div class="four fields">';
 
 		echo '<div class="field"><label for="offair-site">' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</label><select id="offair-site" name="offair_site" class="ui dropdown"><option value="0">' . esc_html__( 'All sites', 'offair-for-mainwp' ) . '</option>';
 		foreach ( $sites as $site ) {
@@ -203,10 +226,11 @@ class Incidents_Page {
 		echo '<th>' . esc_html__( 'Site', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'State', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Offair version', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Last outage', 'offair-for-mainwp' ) . '</th><th>' . esc_html__( 'Downtime, 30 days', 'offair-for-mainwp' ) . '</th>';
 		echo '</tr></thead><tbody>';
 
-		$since = time() - 30 * DAY_IN_SECONDS;
+		$since = time() - Widgets::PERIOD;
 
 		foreach ( $sites as $site ) {
 			$stored  = $site['stored'];
+			$status  = Sync::status( $stored );
 			$last    = Sync::last_outage( $stored );
 			$version = '';
 
@@ -218,10 +242,10 @@ class Incidents_Page {
 
 			echo '<tr>';
 			echo '<td><a href="' . esc_url( Widgets::site_url( $site['id'] ) ) . '">' . esc_html( $site['name'] ) . '</a></td>';
-			echo '<td>' . Labels::badge( Sync::status( $stored ) ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
+			echo '<td>' . Labels::badge( $status ) . '</td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in Labels::badge().
 			echo '<td>' . esc_html( $version ) . '</td>';
 			echo '<td>' . esc_html( null !== $last ? Labels::date( $last['start'] ) : '' ) . '</td>';
-			echo '<td>' . esc_html( 'reporting' === Sync::status( $stored ) ? Labels::minutes( Sync::downtime_minutes( $stored, $since ) ) : '' ) . '</td>';
+			echo '<td>' . esc_html( 'reporting' === $status ? Labels::minutes( Sync::downtime_minutes( $stored, $since ) ) : '' ) . '</td>';
 			echo '</tr>';
 		}
 

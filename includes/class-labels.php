@@ -154,6 +154,16 @@ class Labels {
 	}
 
 	/**
+	 * Line saying that a site sent only its most recent outages.
+	 *
+	 * @return string
+	 */
+	public static function truncated() {
+		/* translators: %d: number of outages. */
+		return sprintf( __( 'Only the %d most recent outages of a site are kept: older ones of the period are missing.', 'offair-for-mainwp' ), 50 );
+	}
+
+	/**
 	 * Line counting the short maintenance pages left out of a list.
 	 *
 	 * @param int $count Number of short maintenance pages.
@@ -171,18 +181,22 @@ class Labels {
 	 * Link that opens the Offair settings of a site, logged in through MainWP.
 	 *
 	 * MainWP refuses to open a site without the _opennonce it checks against
-	 * mainwp-admin-nonce, as in the links it builds itself.
+	 * mainwp-admin-nonce, as in the links it builds itself. On a network, the
+	 * settings live in the network admin: Offair 1.5.2 and later sends where.
 	 *
-	 * @param int $site_id Site ID.
+	 * @param int        $site_id Site ID.
+	 * @param array|null $stored  Stored data of the site.
 	 * @return string
 	 */
-	public static function settings_url( $site_id ) {
+	public static function settings_url( $site_id, $stored = null ) {
+		$location = isset( $stored['offair']['settings'] ) && in_array( $stored['offair']['settings'], Sync::SETTINGS_PAGES, true ) ? $stored['offair']['settings'] : Sync::SETTINGS_PAGES[0];
+
 		return add_query_arg(
 			array(
 				'page'       => 'SiteOpen',
 				'newWindow'  => 'yes',
 				'websiteid'  => (int) $site_id,
-				'location'   => rawurlencode( base64_encode( 'options-general.php?page=offair' ) ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- MainWP expects the location in base64.
+				'location'   => rawurlencode( base64_encode( $location ) ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- MainWP expects the location in base64.
 				'_opennonce' => wp_create_nonce( 'mainwp-admin-nonce' ),
 			),
 			admin_url( 'admin.php' )

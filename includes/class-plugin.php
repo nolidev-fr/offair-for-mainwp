@@ -41,6 +41,13 @@ final class Plugin {
 	public $incidents_page;
 
 	/**
+	 * Sites of the current user, read once per request.
+	 *
+	 * @var array[]|null
+	 */
+	private $sites = null;
+
+	/**
 	 * Returns the shared instance, creating it on first use.
 	 *
 	 * @return Plugin
@@ -104,20 +111,47 @@ final class Plugin {
 	 * @return array[] Each site has an id, a name, a url and its data.
 	 */
 	public function sites() {
-		$sites = apply_filters( 'mainwp_getsites', OFFAIR_MAINWP_FILE, $this->key(), null ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
-		$out   = array();
+		if ( null !== $this->sites ) {
+			return $this->sites;
+		}
 
-		foreach ( is_array( $sites ) ? $sites : array() as $site ) {
-			$id    = (int) $site['id'];
-			$out[] = array(
+		$sites  = apply_filters( 'mainwp_getsites', OFFAIR_MAINWP_FILE, $this->key(), null ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
+		$sites  = is_array( $sites ) ? $sites : array();
+		$stored = Sync::get_many( wp_list_pluck( $sites, 'id' ) );
+
+		$this->sites = array();
+
+		foreach ( $sites as $site ) {
+			$id            = (int) $site['id'];
+			$this->sites[] = array(
 				'id'     => $id,
 				'name'   => (string) $site['name'],
 				'url'    => (string) $site['url'],
-				'stored' => Sync::get( $id ),
+				'stored' => isset( $stored[ $id ] ) ? $stored[ $id ] : null,
 			);
 		}
 
-		return $out;
+		return $this->sites;
+	}
+
+	/**
+	 * Whether the current user can see a site in MainWP.
+	 *
+	 * @param int $site_id Site ID.
+	 * @return bool
+	 */
+	public function can_see_site( $site_id ) {
+		return in_array( (int) $site_id, wp_list_pluck( $this->sites(), 'id' ), true );
+	}
+
+	/**
+	 * Folder of the extension, from which MainWP names its page and the
+	 * access it gives to it.
+	 *
+	 * @return string
+	 */
+	public static function folder() {
+		return dirname( OFFAIR_MAINWP_BASENAME );
 	}
 
 	/**
@@ -131,6 +165,6 @@ final class Plugin {
 			return false;
 		}
 
-		return ! function_exists( 'mainwp_current_user_can' ) || mainwp_current_user_can( 'extension', self::SLUG );
+		return ! function_exists( 'mainwp_current_user_can' ) || mainwp_current_user_can( 'extension', self::folder() );
 	}
 }
