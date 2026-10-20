@@ -84,7 +84,8 @@ final class Plugin {
 			'plugin'   => OFFAIR_MAINWP_FILE,
 			'api'      => self::SLUG,
 			'mainwp'   => false,
-			'callback' => array( $this->incidents_page, 'render' ),
+			// A static callback: MainWP saves this list in an option, and an object would be saved with all its data.
+			'callback' => array( Incidents_Page::class, 'render_page' ),
 			'icon'     => plugins_url( 'assets/icon.svg', OFFAIR_MAINWP_FILE ),
 		);
 

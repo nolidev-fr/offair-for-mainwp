@@ -74,6 +74,13 @@ class Incidents_Page {
 	}
 
 	/**
+	 * Shows the page: callback given to MainWP.
+	 */
+	public static function render_page() {
+		offair_mainwp()->incidents_page->render();
+	}
+
+	/**
 	 * Shows the page, inside the MainWP frame.
 	 */
 	public function render() {
@@ -84,7 +91,7 @@ class Incidents_Page {
 		do_action( 'mainwp_pageheader_extensions', OFFAIR_MAINWP_FILE ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook of MainWP.
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters.
-		$site_filter   = isset( $_GET['offair_site'] ) ? absint( $_GET['offair_site'] ) : 0;
+		$site_filter   = isset( $_GET['offair_site'] ) ? max( 0, (int) $_GET['offair_site'] ) : 0;
 		$screen_filter = isset( $_GET['offair_screen'] ) ? sanitize_key( wp_unslash( $_GET['offair_screen'] ) ) : '';
 		$show_short    = ! empty( $_GET['offair_short'] );
 		$paged         = isset( $_GET['offair_paged'] ) ? max( 1, absint( $_GET['offair_paged'] ) ) : 1;

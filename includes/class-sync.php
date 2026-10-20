@@ -46,6 +46,11 @@ class Sync {
 	const MAX_INCIDENTS = 100;
 
 	/**
+	 * Longest version number kept, so that a site cannot fill the database.
+	 */
+	const MAX_VERSION_LENGTH = 20;
+
+	/**
 	 * Settings pages of Offair on a child site, relative to wp-admin.
 	 */
 	const SETTINGS_PAGES = array( 'options-general.php?page=offair', 'network/settings.php?page=offair' );
@@ -104,7 +109,7 @@ class Sync {
 	 * @return array|null
 	 */
 	public static function sanitize( $data ) {
-		if ( ! is_array( $data ) || empty( $data['version'] ) ) {
+		if ( ! is_array( $data ) || empty( $data['version'] ) || ! is_scalar( $data['version'] ) ) {
 			return null;
 		}
 
@@ -128,35 +133,53 @@ class Sync {
 	}
 
 	/**
-	 * Keeps only the known keys of an outage.
+	 * Keeps only the known keys of an outage, with times that can be real.
+	 *
+	 * An outage that starts more than a year ago or in the future is left out,
+	 * and its end is kept between its start and now. The clock of a site may
+	 * be ahead of the dashboard: an hour is allowed.
 	 *
 	 * @param mixed $incident Outage.
 	 * @return array|null
 	 */
 	private static function sanitize_incident( $incident ) {
-		if ( ! is_array( $incident ) || empty( $incident['start'] ) || ! isset( $incident['screen'] ) || ! in_array( $incident['screen'], self::SCREENS, true ) ) {
+		if ( ! is_array( $incident ) || empty( $incident['start'] ) || ! is_scalar( $incident['start'] ) || ! isset( $incident['screen'] ) || ! in_array( $incident['screen'], self::SCREENS, true ) ) {
 			return null;
 		}
 
-		$start = (int) $incident['start'];
+		$now    = time();
+		$latest = $now + HOUR_IN_SECONDS;
+		$start  = (int) $incident['start'];
+
+		if ( $start < $now - YEAR_IN_SECONDS || $start > $latest ) {
+			return null;
+		}
+
+		$end    = isset( $incident['end'] ) && is_scalar( $incident['end'] ) ? (int) $incident['end'] : $start;
+		$status = isset( $incident['status'] ) && is_scalar( $incident['status'] ) ? (int) $incident['status'] : 0;
 
 		return array(
 			'screen' => $incident['screen'],
 			'start'  => $start,
-			'end'    => isset( $incident['end'] ) ? max( $start, (int) $incident['end'] ) : $start,
-			'count'  => isset( $incident['count'] ) ? (int) $incident['count'] : 0,
-			'status' => isset( $incident['status'] ) ? (int) $incident['status'] : 0,
+			'end'    => min( max( $start, $end ), $latest ),
+			'count'  => isset( $incident['count'] ) && is_scalar( $incident['count'] ) ? max( 0, (int) $incident['count'] ) : 0,
+			// An HTTP status, or 0 when unknown.
+			'status' => $status >= 100 && $status <= 599 ? $status : 0,
 		);
 	}
 
 	/**
-	 * Keeps only the characters of a version number.
+	 * Keeps only the characters of a version number, 20 at most.
 	 *
 	 * @param mixed $version Version.
 	 * @return string
 	 */
 	private static function sanitize_version( $version ) {
-		return (string) preg_replace( '/[^0-9A-Za-z.\-]/', '', (string) $version );
+		if ( ! is_scalar( $version ) ) {
+			return '';
+		}
+
+		return substr( (string) preg_replace( '/[^0-9A-Za-z.\-]/', '', (string) $version ), 0, self::MAX_VERSION_LENGTH );
 	}
 
 	/**
@@ -179,7 +202,7 @@ class Sync {
 			}
 
 			$exact = self::OFFAIR_PLUGIN === $plugin['slug'];
-			$moved = 'offair.php' === basename( $plugin['slug'] ) && isset( $plugin['name'] ) && 0 === strpos( (string) $plugin['name'], 'Offair' );
+			$moved = 'offair.php' === basename( $plugin['slug'] ) && isset( $plugin['name'] ) && is_string( $plugin['name'] ) && 0 === strpos( $plugin['name'], 'Offair' );
 
 			if ( $exact || ( null === $found && $moved ) ) {
 				$found = array(
